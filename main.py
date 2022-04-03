@@ -9,6 +9,7 @@ from utils.misc import *
 from utils.test_helpers import *
 from utils.prepare_dataset import *
 from utils.rotation import rotate_batch
+from utils.color import color_batch
 
 parser = argparse.ArgumentParser()
 parser.add_argument('--dataset', default='cifar10')
@@ -42,7 +43,7 @@ args = parser.parse_args()
 my_makedir(args.outf)
 import torch.backends.cudnn as cudnn
 cudnn.benchmark = True
-net, ext, head, ssh = build_model(args)
+net, ext, head, ssh,ssh_color = build_model(args)
 _, teloader = prepare_test_data(args)
 _, trloader = prepare_train_data(args)
 
@@ -54,11 +55,13 @@ criterion = nn.CrossEntropyLoss().cuda()
 
 all_err_cls = []
 all_err_ssh = []
+all_err_ssh_color = []
 print('Running...')
 print('Error (%)\t\ttest\t\tself-supervised')
 for epoch in range(1, args.nepoch+1):
     net.train()
     ssh.train()
+    ssh_color.train()
 
     for batch_idx, (inputs, labels) in enumerate(trloader):
         optimizer.zero_grad()
@@ -68,26 +71,32 @@ for epoch in range(1, args.nepoch+1):
 
         if args.shared is not None:
             inputs_ssh, labels_ssh = rotate_batch(inputs, args.rotation_type)
+            inputs_ssh_color, labels_ssh_color = color_batch(inputs, args.color_type)
             inputs_ssh, labels_ssh = inputs_ssh.cuda(), labels_ssh.cuda()
+            inputs_ssh_color, labels_ssh_color = inputs_ssh_color.cuda(), labels_ssh_color.cuda()
             outputs_ssh = ssh(inputs_ssh)
+            outputs_ssh_color = ssh_color(inputs_ssh_color)
             loss_ssh = criterion(outputs_ssh, labels_ssh)
+            loss_ssh_color = criterion(outputs_ssh_color, labels_ssh_color)
             loss += loss_ssh
+            loss += loss_ssh_color
 
         loss.backward()
         optimizer.step()
 
     err_cls = test(teloader, net)[0]
-    err_ssh = 0 if args.shared is None else test(teloader, ssh, sslabel='expand')[0]
+    err_ssh, err_ssh_color = 0 if args.shared is None else test(teloader, ssh,ssh_color, sslabel='expand')[0:2]
     all_err_cls.append(err_cls)
     all_err_ssh.append(err_ssh)
+    all_err_ssh_color.append(err_ssh_color)
     scheduler.step()
 
     print(('Epoch %d/%d:' %(epoch, args.nepoch)).ljust(24) +
-                    '%.2f\t\t%.2f' %(err_cls*100, err_ssh*100))
-    torch.save((all_err_cls, all_err_ssh), args.outf + '/loss.pth')
-    plot_epochs(all_err_cls, all_err_ssh, args.outf + '/loss.pdf')
+                    '%.2f\t\t%.2f' %(err_cls*100, err_ssh*100,all_err_ssh_color*100))
+    torch.save((all_err_cls, all_err_ssh,all_err_ssh_color), args.outf + '/loss.pth')
+    plot_epochs(all_err_cls, all_err_ssh,all_err_ssh_color, args.outf + '/loss.pdf')
 
-state = {'err_cls': err_cls, 'err_ssh': err_ssh,
+state = {'err_cls': err_cls, 'err_ssh': err_ssh,'err_ssh_color': err_ssh_color,
             'net': net.state_dict(), 'head': head.state_dict(),
             'optimizer': optimizer.state_dict()}
 torch.save(state, args.outf + '/ckpt.pth')
