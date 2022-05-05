@@ -8,7 +8,7 @@ setting = sys.argv[3]
 name = sys.argv[4]
 
 dataroot = '--dataroot '
-dataroot += '/home/yu/datasets/'		# PLEASE EDIT THIS
+dataroot += 'dataset'		# PLEASE EDIT THIS
 
 if level == 0:
 	common_corruptions = ['cifar_new']

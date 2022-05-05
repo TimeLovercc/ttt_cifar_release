@@ -18,7 +18,7 @@ from advertorch.attacks import LinfPGDAttack
 
 parser = argparse.ArgumentParser()
 parser.add_argument('--dataset', default='cifar10')
-parser.add_argument('--dataroot', default='/home/yu/datasets/')
+parser.add_argument('--dataroot', default='dataset')
 ########################################################################
 parser.add_argument('--depth', default=26, type=int)
 parser.add_argument('--width', default=1, type=int)
@@ -36,15 +36,15 @@ parser.add_argument('--alp', action='store_true')
 parser.add_argument('--outf', default='.')
 
 args = parser.parse_args()
-import os
-if os.path.isdir('/data/yusun/datasets/'):
-    args.dataroot = '/data/yusun/datasets/'
-elif os.path.isdir('/home/smartbuy/ssda/datasets/'):
-    args.dataroot = '/home/smartbuy/ssda/datasets/'
-elif os.path.isdir('/home/yu/datasets/'):
-    args.dataroot = '/home/yu/datasets/'
-elif os.path.isdir('/home/yusun/datasets/'):
-    args.dataroot = '/home/yusun/datasets/'
+# import os
+# if os.path.isdir('/data/yusun/datasets/'):
+#     args.dataroot = '/data/yusun/datasets/'
+# elif os.path.isdir('/home/smartbuy/ssda/datasets/'):
+#     args.dataroot = '/home/smartbuy/ssda/datasets/'
+# elif os.path.isdir('/home/yu/datasets/'):
+#     args.dataroot = '/home/yu/datasets/'
+# elif os.path.isdir('/home/yusun/datasets/'):
+#     args.dataroot = '/home/yusun/datasets/'
 
 args.shared = 'none'
 my_makedir(args.outf)

@@ -2,6 +2,7 @@ import torch
 import torch.utils.data
 import torchvision
 import torchvision.transforms as transforms
+import numpy as np
 
 NORM = ((0.5, 0.5, 0.5), (0.5, 0.5, 0.5))
 te_transforms = transforms.Compose([transforms.ToTensor(),

@@ -28,7 +28,7 @@ args = parser.parse_args()
 my_makedir(args.outf)
 import torch.backends.cudnn as cudnn
 cudnn.benchmark = True
-net, ext, head, ssh = build_model(args)
+net, ext, head, head_color, ssh, ssh_color = build_model(args)
 teset, teloader = prepare_test_data(args)
 
 print('Resuming from %s...' %(args.resume))
@@ -46,20 +46,27 @@ if args.none:
 
 print('Old test error ssh %.2f' %(ckpt['err_ssh']*100))
 head.load_state_dict(ckpt['head'])
+head_color.load_state_dict(ckpt['head_color'])
 ssh_initial, ssh_correct, ssh_losses = [], [], []
+ssh_initial2, ssh_correct2, ssh_losses2 = [], [], []
 
 labels = [0,1,2,3]
+labels2 = [0,1,2,3,4,5]
 for label in labels:
-	tmp = test(teloader, ssh, sslabel=label)
+	tmp = test(teloader, ssh, ssh_color, sslabel=label)
 	ssh_initial.append(tmp[0])
-	ssh_correct.append(tmp[1])
-	ssh_losses.append(tmp[2])
+	ssh_initial2.append(tmp[1])
+	ssh_correct.append(tmp[2])
+	ssh_correct2.append(tmp[3])
+	ssh_losses.append(tmp[4])
+	ssh_losses2.append(tmp[5])
 
 rdict = {'cls_initial': cls_initial, 'cls_correct': cls_correct, 'cls_losses': cls_losses,
-			'ssh_initial': ssh_initial, 'ssh_correct': ssh_correct, 'ssh_losses': ssh_losses}
+			'ssh_initial': ssh_initial, 'ssh_correct': ssh_correct, 'ssh_losses': ssh_losses,
+			'ssh_initial2': ssh_initial2, 'ssh_correct2': ssh_correct2, 'ssh_losses2': ssh_losses2}
 torch.save(rdict, args.outf + '/%s_%d_inl.pth' %(args.corruption, args.level))
 
 if args.grad_corr:
-	corr = test_grad_corr(teloader, net, ssh, ext)
+	corr, corr2 = test_grad_corr(teloader, net, ssh, ssh_color, ext)
 	print('Average gradient inner product: %.2f' %(mean(corr)))
-	torch.save(corr, args.outf + '/%s_%d_grc.pth' %(args.corruption, args.level))
+	torch.save((corr, corr2), args.outf + '/%s_%d_grc.pth' %(args.corruption, args.level))
